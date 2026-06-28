@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>종합과정 상세 · 학습 목록 / 수료 기준</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+  :root{
+    --blue:#0066FF;            --blue-06:rgba(0,102,255,.06);  --blue-12:rgba(0,102,255,.12);
+    --green:#00BF40;           --green-06:rgba(0,191,64,.06);
+    --purple:#6541F2;          --purple-06:rgba(101,65,242,.06);
+    --gray-06:rgba(23,23,25,.05);
+    --ink:#171719;
+    --ink80:rgba(23,23,25,.8); --ink60:rgba(23,23,25,.6); --ink45:rgba(23,23,25,.45);
+    --line:rgba(0,0,0,.08);    --line-strong:rgba(0,0,0,.14);
+    --fill:#f7f7f8;            --fill-2:#fbfbfc;
+    --radius:12px; --tight:-0.5px;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:#eef0f3; color:var(--ink); -webkit-font-smoothing:antialiased; letter-spacing:var(--tight); }
+  .num{ font-family:'SUIT','Pretendard',sans-serif; letter-spacing:var(--tight); }
+  .page{ max-width:860px; margin:0 auto; padding:28px 16px 80px; }
+
+  .ctx{ background:#fff; border:1px dashed var(--line-strong); border-radius:10px;
+    padding:12px 16px; font-size:12.5px; color:var(--ink60); line-height:1.6; margin-bottom:18px; }
+  .ctx b{ color:var(--ink); font-weight:700; }
+  .ctx .tag{ display:inline-block; font-size:10.5px; font-weight:700; color:var(--blue);
+    background:var(--blue-06); border-radius:5px; padding:1px 7px; margin-right:4px; }
+
+  /* 탭 바 */
+  .tabs{ display:flex; gap:24px; background:#fff; border-radius:14px 14px 0 0; padding:0 24px; border-bottom:1px solid var(--line); }
+  .tab{ height:58px; display:flex; align-items:center; font-size:16px; font-weight:500; color:var(--ink60); position:relative; background:none; border:none; font-family:inherit; cursor:pointer; white-space:nowrap; letter-spacing:var(--tight); }
+  .tab[data-panel]{ cursor:pointer; }
+  .tab:not([data-panel]){ cursor:default; color:var(--ink45); }
+  .tab.active{ color:var(--ink); font-weight:700; }
+  .tab.active::after{ content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--ink); }
+  .tab:focus-visible{ outline:2px solid var(--blue); outline-offset:-4px; border-radius:4px; }
+
+  .panel{ background:#fff; border-radius:0 0 14px 14px; padding:24px 24px 30px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+  .tabpanel{ display:none; }
+  .tabpanel.show{ display:block; }
+  .sec-title{ display:flex; align-items:baseline; gap:8px; margin-bottom:14px; }
+  .sec-title h2{ font-size:18px; font-weight:800; }
+  .sec-title .hint{ font-size:12.5px; color:var(--ink45); }
+
+  /* 구성 과정 선택기 (학습 목록·수료 기준 공통) */
+  .selector{ border:1px solid var(--line); border-radius:var(--radius); padding:14px; background:var(--fill-2); }
+  .selector-head{ display:flex; align-items:center; gap:8px; margin-bottom:12px; padding:0 2px; }
+  .selector-head .lab{ font-size:13px; font-weight:800; color:var(--ink80); }
+  .selector-head .meta{ font-size:11.5px; color:var(--ink45); }
+  .selector-head .meta b{ color:var(--blue); font-weight:700; }
+  .grp-tag{ font-size:11.5px; font-weight:700; color:var(--ink45); margin:6px 2px 8px; display:flex; align-items:center; gap:6px; }
+  .grp-tag::before{ content:''; width:5px; height:5px; border-radius:50%; background:var(--ink45); }
+  .grp-tag.req{ color:var(--blue); }
+  .grp-tag.req::before{ background:var(--blue); }
+  .pick-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .pick{ flex:1 1 240px; min-width:0; display:flex; align-items:center; gap:10px;
+    border:1px solid var(--line); border-radius:10px; background:#fff; padding:13px 14px;
+    cursor:pointer; text-align:left; font-family:inherit; transition:border-color .18s ease, background .18s ease, box-shadow .18s ease; }
+  .pick:hover{ border-color:var(--blue-12); }
+  .pick:focus-visible{ outline:2px solid var(--blue); outline-offset:1px; }
+  .pick.on{ border-color:var(--blue); background:var(--blue-06); box-shadow:inset 0 0 0 1px var(--blue); }
+  .pb{ font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; line-height:1.5; flex:0 0 auto; }
+  .pb.req{ background:var(--blue-06); color:var(--blue); }
+  .pb.opt{ background:var(--fill); color:var(--ink60); }
+  .pick.on .pb.req{ background:#fff; }
+  .pick .pname{ font-size:14px; font-weight:600; line-height:1.4; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pick.on .pname{ font-weight:700; }
+
+  .course-list{ margin-top:8px; }
+  .cl-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:26px 2px 12px; }
+  .cl-head h3{ font-size:16px; font-weight:800; }
+  .body{ display:none; }
+  .body.show{ display:block; }
+
+  /* ===== 학습 목록: 평가항목 그룹형 ===== */
+  .expand-all{ display:flex; align-items:center; gap:9px; }
+  .expand-all .ea-lab{ font-size:12.5px; color:var(--ink60); font-weight:500; }
+  .switch{ width:38px; height:22px; border-radius:11px; background:#d4d6db; border:none; position:relative; cursor:pointer; padding:0; transition:background .2s ease; flex:0 0 auto; }
+  .switch::after{ content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); transition:transform .2s ease; }
+  .switch[aria-checked="true"]{ background:var(--blue); }
+  .switch[aria-checked="true"]::after{ transform:translateX(16px); }
+  .switch:focus-visible{ outline:2px solid var(--blue); outline-offset:2px; }
+  .eval{ border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; margin-bottom:10px; background:#fff; transition:border-color .18s ease; }
+  .eval.open{ border-color:var(--blue-12); }
+  .eval-head{ width:100%; display:flex; align-items:center; gap:6px; padding:16px 18px; background:#fff; border:none; cursor:pointer; text-align:left; font-family:inherit; }
+  .eval-head:hover{ background:var(--fill-2); }
+  .eval-head:focus-visible{ outline:2px solid var(--blue); outline-offset:-2px; }
+  .eb{ font-size:12px; font-weight:700; position:relative; padding-right:8px; flex:0 0 auto; }
+  .eb::after{ content:''; position:absolute; top:1px; right:2px; width:3px; height:3px; border-radius:50%; }
+  .eb.req{ color:var(--blue); } .eb.req::after{ background:var(--blue); }
+  .eb.opt{ color:var(--ink45); } .eb.opt::after{ background:var(--ink45); }
+  .ename{ font-size:15.5px; font-weight:700; color:var(--ink); }
+  .echev{ margin-left:auto; width:20px; height:20px; flex:0 0 auto; color:var(--ink45); display:flex; align-items:center; justify-content:center; transition:transform .22s ease; }
+  .eval.open .echev{ transform:rotate(180deg); color:var(--blue); }
+  .echev svg{ width:13px; height:13px; }
+  .eval-body{ display:none; border-top:1px solid var(--line); background:var(--fill-2); }
+  .eval.open .eval-body{ display:block; }
+  .section + .section{ border-top:1px solid var(--line); }
+  .sec-head{ display:flex; align-items:center; gap:7px; padding:11px 18px; font-size:13px; font-weight:600; color:var(--ink80); }
+  .sec-head .scnt{ font-size:12px; color:var(--ink45); font-weight:500; }
+  .content{ display:flex; align-items:center; gap:12px; padding:11px 18px 11px 30px; background:#fff; }
+  .content + .content{ border-top:1px solid var(--line); }
+  .c-ico{ width:30px; height:30px; border-radius:7px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; }
+  .c-ico.video{ background:var(--blue-06); color:var(--blue); }
+  .c-ico.qa{ background:var(--purple-06); color:var(--purple); }
+  .c-ico.offline{ background:var(--green-06); color:var(--green); }
+  .c-ico.file{ background:var(--gray-06); color:var(--ink60); }
+  .c-ico svg{ width:15px; height:15px; }
+  .c-info{ flex:1; min-width:0; }
+  .c-name{ font-size:13.5px; font-weight:500; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .c-type{ font-size:11.5px; color:var(--ink45); margin-top:2px; }
+
+  /* ===== 수료 기준 ===== */
+  .pkg-crit{ border:1px solid var(--line); border-left:3px solid var(--blue); border-radius:10px;
+    background:var(--blue-06); padding:16px 18px; margin-bottom:6px; }
+  .pkg-crit .pc-t{ font-size:13px; font-weight:800; color:var(--blue); margin-bottom:8px; }
+  .pkg-crit .pc-main{ font-size:15px; font-weight:700; color:var(--ink); line-height:1.5; }
+  .pkg-crit .pc-main b{ color:var(--blue); }
+  .pkg-crit ul{ margin:10px 0 0; padding-left:16px; }
+  .pkg-crit li{ font-size:12.5px; color:var(--ink60); line-height:1.7; }
+
+  .crit-wrap{ border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  .crit-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  .crit-table th{ background:var(--fill); color:var(--ink45); font-weight:500; font-size:12.5px; text-align:left; padding:13px 16px; }
+  .crit-table th.col-item{ width:55%; }
+  .crit-table td{ padding:16px; border-top:1px solid var(--line); color:var(--ink80); }
+  .crit-table td.ci-name{ font-weight:700; color:var(--ink); }
+  .crit-table td.ci-req{ font-weight:600; color:var(--ink80); }
+  .crit-table td.ci-req.opt{ color:var(--ink45); }
+  .crit-table .num{ color:var(--ink80); }
+  .crit-table .ci-total td{ background:var(--fill); font-weight:800; color:var(--ink); }
+  .crit-note{ font-size:11.5px; color:var(--ink45); margin-top:10px; line-height:1.6; }
+
+  @media (max-width:560px){
+    .tabs{ gap:14px; padding:0 16px; overflow-x:auto; }
+    .tab{ font-size:14px; height:52px; }
+    .panel{ padding:18px 14px 24px; }
+    .pick{ flex:1 1 100%; }
+    .cl-head{ flex-wrap:wrap; }
+    .crit-table th:nth-child(3), .crit-table td:nth-child(3){ display:none; }
+  }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="ctx">
+    <span class="tag">시안</span>종합과정 상세 · <b>학습 목록</b> / <b>수료 기준</b> 탭 (탭을 클릭해 전환).
+    두 탭 모두 <b>구성 과정 선택 → 과정별 내용</b> 구조이며, 수료 기준 탭 상단에 <b>종합 수료 기준</b>을 요약합니다. 수강신청 전 화면.
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="과정 상세 탭">
+    <button class="tab" role="tab">소개</button>
+    <button class="tab active" role="tab" data-panel="p-learning" aria-selected="true">학습 목록</button>
+    <button class="tab" role="tab">강사 정보</button>
+    <button class="tab" role="tab" data-panel="p-criteria" aria-selected="false">수료 기준</button>
+    <button class="tab" role="tab">후기</button>
+  </div>
+
+  <div class="panel">
+
+    <!-- ============ 학습 목록 탭 ============ -->
+    <div class="tabpanel show" id="p-learning" role="tabpanel">
+      <div class="sec-title"><h2>학습 목록</h2><span class="hint">구성 과정을 선택하면 해당 과정의 학습 목록이 표시됩니다.</span></div>
+
+      <div class="selector">
+        <div class="selector-head"><span class="lab">구성 과정</span><span class="meta">전체 <b>5</b>개 · 필수 <b>3</b> · 자율 2</span></div>
+        <div class="grp-tag req">필수 과정</div>
+        <div class="pick-row">
+          <button class="pick on" data-target="b1" aria-pressed="true"><span class="pb req">필수</span><span class="pname">문제 해결을 위한 프로세스</span></button>
+          <button class="pick" data-target="b2" aria-pressed="false"><span class="pb req">필수</span><span class="pname">리더십 패러독스</span></button>
+          <button class="pick" data-target="b3" aria-pressed="false"><span class="pb req">필수</span><span class="pname">리더십 실전 워크숍</span></button>
+        </div>
+        <div class="grp-tag">자율 과정</div>
+        <div class="pick-row">
+          <button class="pick" data-target="b4" aria-pressed="false"><span class="pb opt">자율</span><span class="pname">괴테, 문학을 넘어 삶을 말하다</span></button>
+          <button class="pick" data-target="b5" aria-pressed="false"><span class="pb opt">자율</span><span class="pname">이것은 작은 브랜드를 위한 책</span></button>
+        </div>
+      </div>
+
+      <div class="course-list">
+        <!-- b1 -->
+        <div class="body show" id="b1">
+          <div class="cl-head"><h3>문제 해결을 위한 프로세스</h3><div class="expand-all"><span class="ea-lab">전체 펼침</span><button class="switch" role="switch" aria-checked="false" aria-label="전체 펼침"></button></div></div>
+          <div class="eval-list">
+            <div class="eval open">
+              <button class="eval-head" aria-expanded="true"><span class="eb req">필수평가</span><span class="ename">학습</span><span class="echev"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <div class="eval-body"><div class="section"><div class="sec-head">1주차 학습<span class="scnt">콘텐츠 <span class="num">3</span></span></div>
+                <div class="content"><span class="c-ico video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span><span class="c-info"><span class="c-name">문제란 무엇인가</span><span class="c-type">동영상 <span class="num">12</span>분</span></span></div>
+                <div class="content"><span class="c-ico video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span><span class="c-info"><span class="c-name">현상과 원인의 구분</span><span class="c-type">동영상 <span class="num">15</span>분</span></span></div>
+                <div class="content"><span class="c-ico video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span><span class="c-info"><span class="c-name">로직트리로 구조화하기</span><span class="c-type">동영상 <span class="num">18</span>분</span></span></div>
+              </div></div>
+            </div>
+            <div class="eval">
+              <button class="eval-head" aria-expanded="false"><span class="eb req">필수평가</span><span class="ename">시험</span><span class="echev"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <div class="eval-body"><div class="section"><div class="sec-head">평가<span class="scnt">콘텐츠 <span class="num">1</span></span></div>
+                <div class="content"><span class="c-ico qa"><svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3 6-6M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="c-info"><span class="c-name">문제 해결 이해도 평가</span><span class="c-type">시험 <span class="num">20</span>문항</span></span></div>
+              </div></div>
+            </div>
+            <div class="eval">
+              <button class="eval-head" aria-expanded="false"><span class="eb opt">자율학습</span><span class="ename">설문조사</span><span class="echev"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <div class="eval-body"><div class="section"><div class="sec-head">설문<span class="scnt">콘텐츠 <span class="num">1</span></span></div>
+                <div class="content"><span class="c-ico qa"><svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3 6-6M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="c-info"><span class="c-name">학습 만족도 조사</span><span class="c-type">설문 <span class="num">10</span>문항</span></span></div>
+              </div></div>
+            </div>
+          </div>
+        </div>
+        <!-- b2 -->
+        <div class="body" id="b2">
+          <div class="cl-head"><h3>리더십 패러독스</h3><div class="expand-all"><span class="ea-lab">전체 펼침</span><button class="switch" role="switch" aria-checked="false" aria-label="전체 펼침"></button></div></div>
+          <div class="eval-list">
+            <div class="eval open">
+              <button class="eval-head" aria-expanded="true"><span class="eb req">필수평가</span><span class="ename">학습</span><span class="echev"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <div class="eval-body"><div class="section"><div class="sec-head">1주차 학습<span class="scnt">콘텐츠 <span class="num">2</span></span></div>
+                <div class="content"><span class="c-ico video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span><span class="c-info"><span class="c-name">권위에서 영향력으로</span><span class="c-type">동영상 <span class="num">16</span>분</span></span></div>
+                <div class="content"><span class="c-ico video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span><span class="c-info"><span class="c-name">모순을 끌어안는 리더</span><span class="c-type">동영상 <span class="num">20</span>분</span></span></div>
+              </div></div>
+            </div>
+            <div class="eval">
+              <button class="eval-head" aria-expanded="false"><span class="eb req">필수평가</span><span class="ename">과제</span><span class="echev"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <div class="eval-body"><div class="section"><div class="sec-head">과제<span class="scnt">콘텐츠 <span class="num">1</span></span></div>
+                <div class="content"><span class="c-ico qa"><svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3 6-6M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="c-info"><span class="c-name">리더십 사례 분석 과제</span><span class="c-type">과제 <span class="num">1</span>개</span></span></div>
+              </div></div>
+            </div>
+          </div>
+        </div>
+        <!-- b3 -->
+        <div class="body" id="b3">
+          <div class="cl-head"><h3>리더십 실전 워크숍</h3><div class="expand-all"><span class="ea-lab">전체 펼침</span><button class="switch" role="switch" aria-checked="false" aria-label="전체 펼침"></button></div></div>
+          <div class="eval-list">
+            <div class="eval open">
+              <button class="eval-head" aria-expanded="true"><span class="eb req">필수평가</span><span class="ename">출석</span><span class="echev"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <div class="eval-body"><div class="section"><div class="sec-head">집합 일정<span class="scnt">콘텐츠 <span class="num">1</span></span></div>
+                <div class="content"><span class="c-ico offline"><svg viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="c-info"><span class="c-name">리더십 실전 워크숍 (집합)</span><span class="c-type">오프라인 <span class="num">5</span>회</span></span></div>
+              </div></div>
+            </div>
+          </div>
+        </div>
+        <!-- b4 -->
+        <div class="body" id="b4">
+          <div class="cl-head"><h3>괴테, 문학을 넘어 삶을 말하다</h3><div class="expand-all"><span class="ea-lab">전체 펼침</span><button class="switch" role="switch" aria-checked="false" aria-label="전체 펼침"></button></div></div>
+          <div class="eval-list">
+            <div class="eval open">
+              <button class="eval-head" aria-expanded="true"><span class="eb req">필수평가</span><span class="ename">학습</span><span class="echev"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <div class="eval-body"><div class="section"><div class="sec-head">1주차 학습<span class="scnt">콘텐츠 <span class="num">2</span></span></div>
+                <div class="content"><span class="c-ico video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span><span class="c-info"><span class="c-name">질풍노도의 청년 괴테</span><span class="c-type">동영상 <span class="num">19</span>분</span></span></div>
+                <div class="content"><span class="c-ico video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span><span class="c-info"><span class="c-name">베르테르의 슬픔</span><span class="c-type">동영상 <span class="num">21</span>분</span></span></div>
+              </div></div>
+            </div>
+          </div>
+        </div>
+        <!-- b5 -->
+        <div class="body" id="b5">
+          <div class="cl-head"><h3>이것은 작은 브랜드를 위한 책</h3><div class="expand-all"><span class="ea-lab">전체 펼침</span><button class="switch" role="switch" aria-checked="false" aria-label="전체 펼침"></button></div></div>
+          <div class="eval-list">
+            <div class="eval open">
+              <button class="eval-head" aria-expanded="true"><span class="eb req">필수평가</span><span class="ename">학습</span><span class="echev"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <div class="eval-body"><div class="section"><div class="sec-head">1주차 학습<span class="scnt">콘텐츠 <span class="num">2</span></span></div>
+                <div class="content"><span class="c-ico video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span><span class="c-info"><span class="c-name">작은 브랜드의 무기</span><span class="c-type">동영상 <span class="num">13</span>분</span></span></div>
+                <div class="content"><span class="c-ico video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span><span class="c-info"><span class="c-name">팬을 만드는 법</span><span class="c-type">동영상 <span class="num">15</span>분</span></span></div>
+              </div></div>
+            </div>
+            <div class="eval">
+              <button class="eval-head" aria-expanded="false"><span class="eb opt">자율학습</span><span class="ename">자료</span><span class="echev"><svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+              <div class="eval-body"><div class="section"><div class="sec-head">참고 자료<span class="scnt">콘텐츠 <span class="num">1</span></span></div>
+                <div class="content"><span class="c-ico file"><svg viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="c-info"><span class="c-name">브랜드 워크북</span><span class="c-type">첨부파일 <span class="num">2</span>개</span></span></div>
+              </div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 수료 기준 탭 ============ -->
+    <div class="tabpanel" id="p-criteria" role="tabpanel">
+      <div class="sec-title"><h2>수료 기준</h2></div>
+
+      <div class="pkg-crit">
+        <div class="pc-t">종합 수료 기준</div>
+        <div class="pc-main">필수 과정 <b>3개</b>를 모두 수료하면 종합과정 수료로 인정됩니다.</div>
+      </div>
+
+      <div class="selector" style="margin-top:14px;">
+        <div class="selector-head"><span class="lab">구성 과정별 수료 기준</span><span class="meta">전체 <b>5</b>개 · 필수 <b>3</b> · 자율 2</span></div>
+        <div class="grp-tag req">필수 과정</div>
+        <div class="pick-row">
+          <button class="pick on" data-target="c1" aria-pressed="true"><span class="pb req">필수</span><span class="pname">문제 해결을 위한 프로세스</span></button>
+          <button class="pick" data-target="c2" aria-pressed="false"><span class="pb req">필수</span><span class="pname">리더십 패러독스</span></button>
+          <button class="pick" data-target="c3" aria-pressed="false"><span class="pb req">필수</span><span class="pname">리더십 실전 워크숍</span></button>
+        </div>
+        <div class="grp-tag">자율 과정</div>
+        <div class="pick-row">
+          <button class="pick" data-target="c4" aria-pressed="false"><span class="pb opt">자율</span><span class="pname">괴테, 문학을 넘어 삶을 말하다</span></button>
+          <button class="pick" data-target="c5" aria-pressed="false"><span class="pb opt">자율</span><span class="pname">이것은 작은 브랜드를 위한 책</span></button>
+        </div>
+      </div>
+
+      <div class="course-list">
+        <div class="body show" id="c1">
+          <div class="cl-head"><h3>문제 해결을 위한 프로세스</h3></div>
+          <div class="crit-wrap"><table class="crit-table"><thead><tr><th class="col-item">평가항목</th><th>필수</th><th>평가비중</th><th>수료기준</th></tr></thead><tbody><tr><td class="ci-name">학습</td><td class="ci-req">필수</td><td class="num">40%</td><td>80% 이상</td></tr><tr><td class="ci-name">시험</td><td class="ci-req">필수</td><td class="num">60%</td><td>60점 이상</td></tr><tr><td class="ci-name">설문조사</td><td class="ci-req opt">선택</td><td class="num">0%</td><td>제출</td></tr><tr class="ci-total"><td>총점</td><td>80점 이상</td><td></td><td></td></tr></tbody></table></div>
+        </div>
+        <div class="body" id="c2">
+          <div class="cl-head"><h3>리더십 패러독스</h3></div>
+          <div class="crit-wrap"><table class="crit-table"><thead><tr><th class="col-item">평가항목</th><th>필수</th><th>평가비중</th><th>수료기준</th></tr></thead><tbody><tr><td class="ci-name">학습</td><td class="ci-req">필수</td><td class="num">50%</td><td>80% 이상</td></tr><tr><td class="ci-name">과제</td><td class="ci-req">필수</td><td class="num">50%</td><td>70점 이상</td></tr><tr class="ci-total"><td>총점</td><td>80점 이상</td><td></td><td></td></tr></tbody></table></div>
+        </div>
+        <div class="body" id="c3">
+          <div class="cl-head"><h3>리더십 실전 워크숍</h3></div>
+          <div class="crit-wrap"><table class="crit-table"><thead><tr><th class="col-item">평가항목</th><th>필수</th><th>평가비중</th><th>수료기준</th></tr></thead><tbody><tr><td class="ci-name">출석</td><td class="ci-req">필수</td><td class="num">-</td><td>5회 이상 출석</td></tr></tbody></table></div>
+        </div>
+        <div class="body" id="c4">
+          <div class="cl-head"><h3>괴테, 문학을 넘어 삶을 말하다</h3></div>
+          <div class="crit-wrap"><table class="crit-table"><thead><tr><th class="col-item">평가항목</th><th>필수</th><th>평가비중</th><th>수료기준</th></tr></thead><tbody><tr><td class="ci-name">학습</td><td class="ci-req">필수</td><td class="num">100%</td><td>80% 이상</td></tr><tr class="ci-total"><td>총점</td><td>80점 이상</td><td></td><td></td></tr></tbody></table></div>
+        </div>
+        <div class="body" id="c5">
+          <div class="cl-head"><h3>이것은 작은 브랜드를 위한 책</h3></div>
+          <div class="crit-wrap"><table class="crit-table"><thead><tr><th class="col-item">평가항목</th><th>필수</th><th>평가비중</th><th>수료기준</th></tr></thead><tbody><tr><td class="ci-name">학습</td><td class="ci-req">필수</td><td class="num">100%</td><td>80% 이상</td></tr><tr><td class="ci-name">자료</td><td class="ci-req opt">선택</td><td class="num">0%</td><td>다운로드</td></tr><tr class="ci-total"><td>총점</td><td>80점 이상</td><td></td><td></td></tr></tbody></table></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // 탭 전환
+  var tabs = document.querySelectorAll('.tab[data-panel]');
+  tabs.forEach(function(t){
+    t.addEventListener('click', function(){
+      document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('active'); x.setAttribute('aria-selected','false'); });
+      document.querySelectorAll('.tabpanel').forEach(function(p){ p.classList.remove('show'); });
+      t.classList.add('active'); t.setAttribute('aria-selected','true');
+      document.getElementById(t.dataset.panel).classList.add('show');
+    });
+  });
+
+  // 구성 과정 선택 (각 탭 내에서 독립 동작)
+  document.querySelectorAll('.pick').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var scope = btn.closest('.tabpanel');
+      scope.querySelectorAll('.pick').forEach(function(b){ b.classList.remove('on'); b.setAttribute('aria-pressed','false'); });
+      scope.querySelectorAll('.body').forEach(function(b){ b.classList.remove('show'); });
+      btn.classList.add('on'); btn.setAttribute('aria-pressed','true');
+      document.getElementById(btn.dataset.target).classList.add('show');
+    });
+  });
+
+  // 평가항목 개별 펼침
+  document.querySelectorAll('.eval-head').forEach(function(h){
+    h.addEventListener('click', function(){
+      var ev = h.closest('.eval');
+      var open = ev.classList.toggle('open');
+      h.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  });
+
+  // 전체 펼침
+  document.querySelectorAll('.switch').forEach(function(sw){
+    sw.addEventListener('click', function(){
+      var body = sw.closest('.body');
+      var on = sw.getAttribute('aria-checked') !== 'true';
+      sw.setAttribute('aria-checked', on ? 'true' : 'false');
+      body.querySelectorAll('.eval').forEach(function(ev){
+        ev.classList.toggle('open', on);
+        ev.querySelector('.eval-head').setAttribute('aria-expanded', on ? 'true' : 'false');
+      });
+    });
+  });
+</script>
+</body>
+</html>
